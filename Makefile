@@ -1,5 +1,5 @@
 HEADERS = common.h chunk.h debug.h
-OBJECTS = main.o chunk.o memory.o debug.o value.o
+OBJECTS = main.o chunk.o memory.o debug.o value.o vm.o
 PROGRAM = main
 
 default: $(PROGRAM)
