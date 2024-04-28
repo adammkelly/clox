@@ -6,15 +6,33 @@
 
 vm_t vm;
 
+static void reset_stack()
+{
+    vm.stack_top = vm.stack;
+}
+
 void init_vm()
 {
-
+    reset_stack();
 }
 
 void free_vm()
 {
 
 }
+
+void push(value_t value)
+{
+    *vm.stack_top = value;
+    vm.stack_top++;
+}
+
+value_t pop()
+{
+    vm.stack_top--;
+    return *vm.stack_top;
+}
+
 
 static interpret_result_t
 run()
@@ -24,6 +42,13 @@ run()
 
     for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
+    printf("          ");
+    for (value_t* slot = vm.stack; slot < vm.stack_top; slot++) {
+        printf("[ ");
+        print_value(*slot);
+        printf(" ]");
+    }
+    printf("\n");
     disassemble_instruction(vm.chunk,
                            (int)(vm.ip - vm.chunk->code));
 #endif
@@ -32,12 +57,14 @@ run()
         {
             case OP_CONSTANT: {
                 value_t constant = READ_CONSTANT();
-                print_value(constant);
-                printf("\n");
+                push(constant);
                 break;
             }
-            case OP_RETURN:
+            case OP_RETURN: {
+                print_value(pop());
+                printf("\n");
                 return INTERPRET_OK;
+            }
         }
     }
 #undef READ_BYTE
