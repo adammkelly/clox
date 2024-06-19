@@ -162,14 +162,14 @@ static token_t identifier()
 
 static token_t number()
 {
-    while (isDigit(peek())) advance();
+    while (is_digit(peek())) advance();
 
     // Look for a fractional part.
-    if (peek() == '.' && isDigit(peekNext())) {
+    if (peek() == '.' && is_digit(peek_next())) {
         // Consume the ".".
         advance();
 
-        while (isDigit(peek())) advance();
+        while (is_digit(peek())) advance();
     }
 
     return make_token(TOKEN_NUMBER);

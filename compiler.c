@@ -47,24 +47,6 @@ current_chunk()
     return compiling_chunk;
 }
 
-void
-compile(const char* source, chunk_t *chunk)
-{
-    init_scanner(source);
-
-    compiling_chunk = chunk;
-
-    parser.had_error = false;
-    parser.panic_mode = false;
-
-
-    advance();
-    expression();
-    consume(TOKEN_EOF, "Expect end of expression");
-    end_compiler();
-    return !parser.had_error;
-}
-
 static void
 error_at(token_t *token, const char* message) {
   fprintf(stderr, "[line %d] Error", token->line);
@@ -136,7 +118,7 @@ make_constant(value_t value)
 {
   int constant = add_constant(current_chunk(), value);
   if (constant > UINT8_MAX) {
-    error("Too many constants in one chunk.");
+    error_at_current("Too many constants in one chunk.");
     return 0;
   }
 
@@ -153,7 +135,7 @@ static void
 end_compiler()
 {
   emit_return();
-  #ifdef DEBUG_PRINT_CODE
+#ifdef DEBUG_PRINT_CODE
   if (!parser.had_error) {
     disassemble_chunk(current_chunk(), "code");
   }
@@ -211,6 +193,13 @@ number()
   emit_constant(NUMBER_VAL(value));
 }
 
+static void string() {
+  emit_constant(
+    OBJ_VAL(copy_string(parser.previous.start + 1,
+                        parser.previous.length - 2))
+  );
+}
+
 static void
 unary()
 {
@@ -248,7 +237,7 @@ parse_rule_t rules[] = {
   [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
   [TOKEN_LESS_EQUAL]    = {NULL,     binary, PREC_COMPARISON},
   [TOKEN_IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_STRING]        = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
   [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
   [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
   [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
@@ -275,7 +264,7 @@ parse_precedence(precedence_t precedence) {
   advance();
   parse_fn prefix_rule = get_rule(parser.previous.type)->prefix;
   if (prefix_rule == NULL) {
-    error("Expect expression.");
+    error_at_current("Expect expression.");
     return;
   }
 
@@ -298,4 +287,22 @@ static void
 expression()
 {
     parse_precedence(PREC_ASSIGNMENT);
+}
+
+bool
+compile(const char* source, chunk_t *chunk)
+{
+    init_scanner(source);
+
+    compiling_chunk = chunk;
+
+    parser.had_error = false;
+    parser.panic_mode = false;
+
+
+    advance();
+    expression();
+    consume(TOKEN_EOF, "Expect end of expression");
+    end_compiler();
+    return !parser.had_error;
 }
