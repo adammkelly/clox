@@ -20,6 +20,21 @@ static object_t* allocate_object(size_t size, obj_type_t type)
   return object;
 }
 
+obj_function_t* new_function()
+{
+  obj_function_t* function = ALLOCATE_OBJ(obj_function_t, OBJ_FUNCTION);
+  function->arity = 0;
+  function->name = NULL;
+  init_chunk(&function->chunk);
+  return function;
+}
+
+obj_native_fn_t* new_native(native_fn_t function) {
+  obj_native_fn_t* native = ALLOCATE_OBJ(obj_native_fn_t, OBJ_NATIVE);
+  native->function = function;
+  return native;
+}
+
 static uint32_t hash_string(const char* key, int length)
 {
   uint32_t hash = 2166136261u;
@@ -64,9 +79,24 @@ obj_string_t* copy_string(const char* chars, int length)
   return allocate_string(heap_chars, length, hash);
 }
 
+static void print_function(obj_function_t* function)
+{
+  if (function->name == NULL) {
+    printf("<script>");
+    return;
+  }
+  printf("<fn %s>", function->name->chars);
+}
+
 void print_object(value_t value)
 {
   switch (OBJ_TYPE(value)) {
+    case OBJ_FUNCTION:
+      print_function(AS_FUNCTION(value));
+      break;
+    case OBJ_NATIVE:
+      printf("<native fn>");
+      break;
     case OBJ_STRING:
       printf("%s", AS_CSTRING(value));
       break;
