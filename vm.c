@@ -58,7 +58,12 @@ static void define_native(const char* name, native_fn_t function)
 void init_vm()
 {
     reset_stack();
+    vm.bytes_allocated = 0;
+    vm.next_gc = 1024 * 1024;
     vm.objects = NULL;
+    vm.gray_count = 0;
+    vm.gray_capacity = 0;
+    vm.gray_stack = NULL;
     init_table(&vm.globals);
     init_table(&vm.strings);
 
@@ -172,18 +177,21 @@ static bool is_falsey(value_t value)
   return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
-static void concatenate() {
-  obj_string_t* b = AS_STRING(pop());
-  obj_string_t* a = AS_STRING(pop());
+static void concatenate()
+{
+    obj_string_t* b = AS_STRING(peek(0));
+    obj_string_t* a = AS_STRING(peek(1));
 
-  int length = a->length + b->length;
-  char* chars = ALLOCATE(char, length + 1);
-  memcpy(chars, a->chars, a->length);
-  memcpy(chars + a->length, b->chars, b->length);
-  chars[length] = '\0';
+    int length = a->length + b->length;
+    char* chars = ALLOCATE(char, length + 1);
+    memcpy(chars, a->chars, a->length);
+    memcpy(chars + a->length, b->chars, b->length);
+    chars[length] = '\0';
 
-  obj_string_t* result = take_string(chars, length);
-  push(OBJ_VAL(result));
+    obj_string_t* result = take_string(chars, length);
+    pop();
+    pop();
+    push(OBJ_VAL(result));
 }
 
 static interpret_result_t

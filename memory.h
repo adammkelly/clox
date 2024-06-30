@@ -19,7 +19,12 @@
     (type *)reallocate(pointer, sizeof(type) * (old_count), \
         sizeof(type) * (new_count))
 
+#define GC_HEAP_GROW_FACTOR 2
+
 void *reallocate(void *pointer, size_t old_size, size_t new_size);
+void mark_object(object_t* object);
+void mark_value(value_t value);
+void collect_garbage();
 void free_objects();
 
 #endif
